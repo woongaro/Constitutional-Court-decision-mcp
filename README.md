@@ -5,7 +5,7 @@
 <img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/fab40b9e-6525-4e32-bddc-e8eb6ec295e6" />
 
 
-## A 사용 전 주의사항
+## 사용 전 주의사항
 
  ** 이 MCP 서버를 사용하려면 반드시 법제처 Open API 사용자 등록이 필요합니다 .**
 
