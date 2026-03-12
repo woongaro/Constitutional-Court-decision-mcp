@@ -115,6 +115,12 @@ def parse_decision_response(raw: dict) -> dict | str:
         "종국일자": data.get("종국일자", ""),
         "결정요지": data.get("결정요지", ""),
         "결정문": full_text,
+        "상세링크": (
+            data.get("헌재결정례상세링크")
+            or data.get("detcLnkUrl")
+            or data.get("lnkUrl")
+            or ""
+        ),
     }
 
 
@@ -199,10 +205,13 @@ async def get_decision(decision_id: str) -> str:
     if isinstance(result, str):
         return result
 
+    source_url = f"http://www.law.go.kr{result['상세링크']}" if result["상세링크"] else f"http://www.law.go.kr/DRF/lawService.do?OC={OC}&target=detc&ID={decision_id}&type=HTML"
+
     lines = [
         f"사건번호: {result['사건번호']}",
         f"사건명: {result['사건명']}",
         f"종국일자: {result['종국일자']}",
+        f"출처: {source_url}",
         "",
         "【결정요지】",
         result["결정요지"] or "(없음)",
