@@ -2,8 +2,7 @@
 openAPI 활용가이드
 법제처 사이트에서 제공되는 검색에 대한 결과를 XML로 받아볼 수 있는 대화형 서비스입니다.
 
-사용자 이메일은 woongaro@gmail.com
-사용자의 이메일의 ID: woongaro
+g4c@korea.kr일경우 OC값=g4c
 
 ---
 
