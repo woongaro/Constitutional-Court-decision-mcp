@@ -200,6 +200,19 @@ class TestSearchDecisionsTool:
         result = await search_decisions()
         assert "검색 결과가 없습니다" in result
 
+    async def test_search_propagates_fetch_error(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            url=(
+                "http://www.law.go.kr/DRF/lawSearch.do"
+                "?OC=woongaro&target=detc&page=1&display=20&sort=lasc&search=1&type=JSON"
+            ),
+            status_code=503,
+        )
+        from server import search_decisions
+        result = await search_decisions()
+        assert "API 오류" in result
+        assert "503" in result
+
 
 class TestGetDecisionTool:
     async def test_get_decision_returns_full_text(self, httpx_mock: HTTPXMock):
@@ -229,3 +242,13 @@ class TestGetDecisionTool:
         from server import get_decision
         result = await get_decision(decision_id="9999")
         assert "찾을 수 없습니다" in result
+
+    async def test_get_decision_propagates_fetch_error(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=111&type=JSON",
+            status_code=503,
+        )
+        from server import get_decision
+        result = await get_decision(decision_id="111")
+        assert "API 오류" in result
+        assert "503" in result

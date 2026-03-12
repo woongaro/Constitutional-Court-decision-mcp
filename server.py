@@ -75,14 +75,18 @@ def parse_search_response(raw: dict) -> dict | str:
 
     decisions = []
     for item in items:
-        # NOTE: 'detcLnkUrl' is the assumed JSON key for 상세링크.
-        # Verify against live API response — the actual key may differ.
         decisions.append({
             "일련번호": item.get("헌재결정례일련번호", ""),
             "사건번호": item.get("사건번호", ""),
             "사건명": item.get("사건명", ""),
             "종국일자": item.get("종국일자", ""),
-            "상세링크": item.get("detcLnkUrl", ""),
+            "상세링크": (
+                item.get("detcLnkUrl")
+                or item.get("detc_지")
+                or item.get("헌재결정례 상세링크")
+                or item.get("lnkUrl")
+                or ""
+            ),
         })
 
     return {
@@ -125,7 +129,7 @@ async def search_decisions(
         query: 검색 키워드 (사건명 또는 본문)
         page: 페이지 번호 (기본값: 1)
         display: 페이지당 결과 수 (기본값: 20, 최대: 100)
-        sort: 정렬 (lasc=사건명오름차순, ldes=내림차순, dasc/ddes=선고일자, nasc/ndes=사건번호, efasc/efdes=종국일자)
+        sort: 정렬 (lasc=사건명오름차순, ldes=사건명내림차순, dasc=선고일자오름차순, ddes=선고일자내림차순, nasc=사건번호오름차순, ndes=사건번호내림차순, efasc=종국일자오름차순, efdes=종국일자내림차순)
         date: 종국일자 YYYYMMDD 정수 (예: 20201010)
         date_range: 종국일자 기간 (예: "20200101~20201231")
         search: 검색범위 (1=사건명, 2=본문검색)
