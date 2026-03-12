@@ -158,3 +158,74 @@ class TestParseDecisionResponse:
     def test_returns_error_when_no_data(self):
         result = parse_decision_response({})
         assert "결정문을 찾을 수 없습니다" in result
+
+
+class TestSearchDecisionsTool:
+    async def test_search_by_keyword(self, httpx_mock: HTTPXMock):
+        # URL param order matches exact order built in search_decisions:
+        # OC, target, page, display, sort, search, query — then type=JSON appended by fetch()
+        httpx_mock.add_response(
+            url=(
+                "http://www.law.go.kr/DRF/lawSearch.do"
+                "?OC=woongaro&target=detc&page=1&display=20&sort=lasc&search=1&query=%EB%B2%8C%EA%B8%88&type=JSON"
+            ),
+            json={
+                "DetcSearch": {
+                    "totalCnt": "1",
+                    "page": "1",
+                    "detc": {
+                        "헌재결정례일련번호": "111",
+                        "종국일자": "20200101",
+                        "사건번호": "2019헌바1",
+                        "사건명": "벌금 위헌확인",
+                        "detcLnkUrl": "http://example.com/111",
+                    },
+                }
+            },
+        )
+        from server import search_decisions
+        result = await search_decisions(query="벌금")
+        assert "벌금 위헌확인" in result
+        assert "2019헌바1" in result
+
+    async def test_search_returns_no_results_message(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            url=(
+                "http://www.law.go.kr/DRF/lawSearch.do"
+                "?OC=woongaro&target=detc&page=1&display=20&sort=lasc&search=1&type=JSON"
+            ),
+            json={"DetcSearch": {"totalCnt": "0", "page": "1"}},
+        )
+        from server import search_decisions
+        result = await search_decisions()
+        assert "검색 결과가 없습니다" in result
+
+
+class TestGetDecisionTool:
+    async def test_get_decision_returns_full_text(self, httpx_mock: HTTPXMock):
+        # URL param order: OC, target, ID — then type=JSON appended by fetch()
+        httpx_mock.add_response(
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=111&type=JSON",
+            json={
+                "DetcService": {
+                    "사건번호": "2019헌바1",
+                    "사건명": "벌금 위헌확인",
+                    "종국일자": "20200101",
+                    "결정요지": "이 사건 법률조항은 위헌이다.",
+                    "결정문": "주문: 위헌 선언.",
+                }
+            },
+        )
+        from server import get_decision
+        result = await get_decision(decision_id="111")
+        assert "2019헌바1" in result
+        assert "위헌이다" in result
+
+    async def test_get_decision_not_found(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=9999&type=JSON",
+            json={"DetcService": {}},
+        )
+        from server import get_decision
+        result = await get_decision(decision_id="9999")
+        assert "찾을 수 없습니다" in result

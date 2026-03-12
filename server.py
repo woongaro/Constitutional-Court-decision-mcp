@@ -107,6 +107,101 @@ def parse_decision_response(raw: dict) -> dict | str:
     }
 
 
+@mcp.tool()
+async def search_decisions(
+    query: str = "",
+    page: int = 1,
+    display: int = 20,
+    sort: str = "lasc",
+    date: int | None = None,
+    date_range: str | None = None,
+    search: int = 1,
+    case_number: int | None = None,
+) -> str:
+    """
+    헌재결정례(Constitutional Court Decision) 목록을 검색합니다.
+
+    Args:
+        query: 검색 키워드 (사건명 또는 본문)
+        page: 페이지 번호 (기본값: 1)
+        display: 페이지당 결과 수 (기본값: 20, 최대: 100)
+        sort: 정렬 (lasc=사건명오름차순, ldes=내림차순, dasc/ddes=선고일자, nasc/ndes=사건번호, efasc/efdes=종국일자)
+        date: 종국일자 YYYYMMDD 정수 (예: 20201010)
+        date_range: 종국일자 기간 (예: "20200101~20201231")
+        search: 검색범위 (1=사건명, 2=본문검색)
+        case_number: 사건번호로 검색
+    """
+    params: dict[str, Any] = {
+        "OC": OC,
+        "target": "detc",
+        "page": page,
+        "display": display,
+        "sort": sort,
+        "search": search,
+    }
+    if query:
+        params["query"] = query
+    if date is not None:
+        params["date"] = date
+    if date_range:
+        params["edYd"] = date_range
+    if case_number is not None:
+        params["nb"] = case_number
+
+    raw = await fetch(SEARCH_URL, params)
+    if isinstance(raw, str):
+        return raw
+
+    result = parse_search_response(raw)
+    if isinstance(result, str):
+        return result
+
+    lines = [f"총 {result['totalCnt']}건 (페이지 {result['page']})\n"]
+    for d in result["decisions"]:
+        lines.append(
+            f"[{d['일련번호']}] {d['사건번호']} — {d['사건명']}\n"
+            f"  종국일자: {d['종국일자']}\n"
+            f"  링크: {d['상세링크']}\n"
+        )
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_decision(decision_id: str) -> str:
+    """
+    헌재결정례 본문을 조회합니다.
+
+    Args:
+        decision_id: 헌재결정례일련번호 (search_decisions 결과의 일련번호 값)
+    """
+    params: dict[str, Any] = {
+        "OC": OC,
+        "target": "detcSc",
+        "ID": decision_id,
+    }
+
+    raw = await fetch(SERVICE_URL, params)
+    if isinstance(raw, str):
+        return raw
+
+    result = parse_decision_response(raw)
+    if isinstance(result, str):
+        return result
+
+    lines = [
+        f"사건번호: {result['사건번호']}",
+        f"사건명: {result['사건명']}",
+        f"종국일자: {result['종국일자']}",
+        "",
+        "【결정요지】",
+        result["결정요지"] or "(없음)",
+        "",
+        "【결정문】",
+        result["결정문"] or "(없음)",
+    ]
+    return "\n".join(lines)
+
+
 def main():
     mcp.run()
 
