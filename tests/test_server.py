@@ -159,6 +159,19 @@ class TestParseDecisionResponse:
         result = parse_decision_response({})
         assert "결정문을 찾을 수 없습니다" in result
 
+    def test_falls_back_to_전문_when_결정문_absent(self):
+        raw = {
+            "DetcService": {
+                "사건번호": "2020헌바1",
+                "사건명": "벌금 위헌확인",
+                "종국일자": "20201010",
+                "결정요지": "이 사건 법률조항은 위헌이다.",
+                "전문": "주문: 위헌 선언 (전문 필드).",
+            }
+        }
+        result = parse_decision_response(raw)
+        assert result["결정문"] == "주문: 위헌 선언 (전문 필드)."
+
 
 class TestSearchDecisionsTool:
     async def test_search_by_keyword(self, httpx_mock: HTTPXMock):
