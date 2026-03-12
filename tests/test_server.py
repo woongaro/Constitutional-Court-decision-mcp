@@ -1,4 +1,5 @@
 import pytest
+import httpx
 from pytest_httpx import HTTPXMock
 
 # These imports will fail until server.py is created — that's expected
@@ -43,6 +44,32 @@ class TestFetch:
         )
         assert "API 오류" in result
         assert "500" in result
+
+    async def test_fetch_returns_timeout_error(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_exception(
+            httpx.ReadTimeout("read timeout"),
+            url="http://www.law.go.kr/DRF/lawSearch.do?OC=woongaro&target=detc&type=JSON",
+        )
+        result = await fetch(
+            "http://www.law.go.kr/DRF/lawSearch.do",
+            {"OC": "woongaro", "target": "detc"},
+        )
+        assert result == "요청 시간 초과"
+
+    async def test_fetch_returns_parse_fail_on_malformed_xml(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            url="http://www.law.go.kr/DRF/lawSearch.do?OC=woongaro&target=detc&type=JSON",
+            text="not json",
+        )
+        httpx_mock.add_response(
+            url="http://www.law.go.kr/DRF/lawSearch.do?OC=woongaro&target=detc&type=XML",
+            content=b"<<invalid xml>>",
+        )
+        result = await fetch(
+            "http://www.law.go.kr/DRF/lawSearch.do",
+            {"OC": "woongaro", "target": "detc"},
+        )
+        assert result == "응답 파싱 실패"
 
 
 class TestParseSearchResponse:
@@ -92,6 +119,11 @@ class TestParseSearchResponse:
 
     def test_handles_zero_totalcnt_as_int(self):
         raw = {"DetcSearch": {"totalCnt": 0, "page": "1"}}
+        result = parse_search_response(raw)
+        assert result == "검색 결과가 없습니다"
+
+    def test_returns_empty_message_when_detc_key_missing(self):
+        raw = {"DetcSearch": {"totalCnt": "5", "page": "1"}}  # no "detc" key
         result = parse_search_response(raw)
         assert result == "검색 결과가 없습니다"
 
