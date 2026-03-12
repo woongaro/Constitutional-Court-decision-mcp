@@ -2,6 +2,10 @@
 
 법제처 헌재결정례 Open API를 Claude에서 사용할 수 있게 해주는 MCP 서버입니다.
 
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/fab40b9e-6525-4e32-bddc-e8eb6ec295e6" />
+
+
+
 ## 설치
 
 ```bash
