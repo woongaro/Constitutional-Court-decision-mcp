@@ -218,7 +218,7 @@ class TestGetDecisionTool:
     async def test_get_decision_returns_full_text(self, httpx_mock: HTTPXMock):
         # URL param order: OC, target, ID — then type=JSON appended by fetch()
         httpx_mock.add_response(
-            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=111&type=JSON",
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detc&ID=111&type=JSON",
             json={
                 "DetcService": {
                     "사건번호": "2019헌바1",
@@ -236,7 +236,7 @@ class TestGetDecisionTool:
 
     async def test_get_decision_not_found(self, httpx_mock: HTTPXMock):
         httpx_mock.add_response(
-            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=9999&type=JSON",
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detc&ID=9999&type=JSON",
             json={"DetcService": {}},
         )
         from server import get_decision
@@ -245,7 +245,7 @@ class TestGetDecisionTool:
 
     async def test_get_decision_propagates_fetch_error(self, httpx_mock: HTTPXMock):
         httpx_mock.add_response(
-            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detcSc&ID=111&type=JSON",
+            url="http://www.law.go.kr/DRF/lawService.do?OC=woongaro&target=detc&ID=111&type=JSON",
             status_code=503,
         )
         from server import get_decision

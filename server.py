@@ -62,13 +62,17 @@ def parse_search_response(raw: dict) -> dict | str:
     """Normalize search response to consistent structure."""
     data = raw.get("DetcSearch", {})
     total = data.get("totalCnt", "0")
+
+    # API returns "Detc" (capital D); XML/mock fixtures may use "detc" (lower)
+    items_raw = data.get("Detc") or data.get("detc")
+
     try:
-        if int(total) == 0 or "detc" not in data:
+        if int(total) == 0 or items_raw is None:
             return "검색 결과가 없습니다"
     except (ValueError, TypeError):
         return "검색 결과가 없습니다"
 
-    items = data["detc"]
+    items = items_raw
     # xmltodict returns a single item as dict, not list
     if isinstance(items, dict):
         items = [items]
@@ -81,8 +85,8 @@ def parse_search_response(raw: dict) -> dict | str:
             "사건명": item.get("사건명", ""),
             "종국일자": item.get("종국일자", ""),
             "상세링크": (
-                item.get("detcLnkUrl")
-                or item.get("detc_지")
+                item.get("헌재결정례상세링크")
+                or item.get("detcLnkUrl")
                 or item.get("헌재결정례 상세링크")
                 or item.get("lnkUrl")
                 or ""
@@ -102,12 +106,15 @@ def parse_decision_response(raw: dict) -> dict | str:
     if not data:
         return "결정문을 찾을 수 없습니다"
 
+    # Live API stores full text in "전문"; test fixtures and XML fallback may use "결정문"
+    full_text = data.get("결정문") or data.get("전문") or ""
+
     return {
         "사건번호": data.get("사건번호", ""),
         "사건명": data.get("사건명", ""),
         "종국일자": data.get("종국일자", ""),
         "결정요지": data.get("결정요지", ""),
-        "결정문": data.get("결정문", ""),
+        "결정문": full_text,
     }
 
 
@@ -180,7 +187,7 @@ async def get_decision(decision_id: str) -> str:
     """
     params: dict[str, Any] = {
         "OC": OC,
-        "target": "detcSc",
+        "target": "detc",
         "ID": decision_id,
     }
 
