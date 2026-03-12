@@ -52,6 +52,8 @@ async def fetch(base_url: str, params: dict[str, Any]) -> dict | str:
             return f"API 오류: HTTP {e.response.status_code}"
         except httpx.TimeoutException:
             return "요청 시간 초과"
+        except httpx.RequestError as e:
+            return f"네트워크 오류: {type(e).__name__}"
         except Exception:
             return "응답 파싱 실패"
 

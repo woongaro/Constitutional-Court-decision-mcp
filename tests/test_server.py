@@ -56,6 +56,17 @@ class TestFetch:
         )
         assert result == "요청 시간 초과"
 
+    async def test_fetch_returns_timeout_error_on_connect_timeout(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_exception(
+            httpx.ConnectTimeout("connect timeout"),
+            url="http://www.law.go.kr/DRF/lawSearch.do?OC=woongaro&target=detc&type=JSON",
+        )
+        result = await fetch(
+            "http://www.law.go.kr/DRF/lawSearch.do",
+            {"OC": "woongaro", "target": "detc"},
+        )
+        assert result == "요청 시간 초과"
+
     async def test_fetch_returns_parse_fail_on_malformed_xml(self, httpx_mock: HTTPXMock):
         httpx_mock.add_response(
             url="http://www.law.go.kr/DRF/lawSearch.do?OC=woongaro&target=detc&type=JSON",
